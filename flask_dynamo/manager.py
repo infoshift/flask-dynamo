@@ -3,6 +3,7 @@
 
 from os import environ
 
+from boto.dynamodb2 import connect_to_region
 from boto.dynamodb2.table import Table
 import boto
 from flask import (
@@ -75,29 +76,7 @@ class Dynamo(object):
         ctx = stack.top
         if ctx is not None:
             if not hasattr(ctx, 'dynamo_connection'):
-                #kwargs = {
-                #    'host': self.app.config['DYNAMO_LOCAL_HOST'] if self.app.config['DYNAMO_ENABLE_LOCAL'] else None,
-                #    'port': int(self.app.config['DYNAMO_LOCAL_PORT']) if self.app.config['DYNAMO_ENABLE_LOCAL'] else None,
-                #    'is_secure': False if self.app.config['DYNAMO_ENABLE_LOCAL'] else True,
-                #}
-
-                ## Only apply if manually specified: otherwise, we'll let boto
-                ## figure it out (boto will sniff for ec2 instance profile
-                ## credentials).
-                #if self.app.config['AWS_ACCESS_KEY_ID']:
-                #  kwargs['aws_access_key_id'] = self.app.config['AWS_ACCESS_KEY_ID']
-                #if self.app.config['AWS_SECRET_ACCESS_KEY']:
-                #  kwargs['aws_secret_access_key'] = self.app.config['AWS_SECRET_ACCESS_KEY']
-
-                ## If DynamoDB local is disabled, we'll remove these settings.
-                #if not kwargs['host']:
-                #    del kwargs['host']
-                #if not kwargs['port']:
-                #    del kwargs['port']
-
-                #ctx.dynamo_connection = connect_to_region(self.app.config['AWS_REGION'], **kwargs)
-                ctx.dynamo_connection = boto.connect_dynamo()
-
+                ctx.dynamo_connection = connect_to_region(self.app.config['AWS_REGION'])
             return ctx.dynamo_connection
 
     @property
@@ -120,25 +99,6 @@ class Dynamo(object):
                         setattr(ctx, 'dynamo_table_%s' % table.table_name, table)
 
             return ctx.dynamo_tables
-
-    def __getattr__(self, name):
-        """
-        Override the get attribute built-in method.
-
-        This will allow us to provide a simple table API.  Let's say a user
-        defines two tables: `users` and `groups`.  In this case, our
-        customization here will allow the user to access these tables by calling
-        `dynamo.users` and `dynamo.groups`, respectively.
-
-        :param str name: The DynamoDB table name.
-        :rtype: object
-        :returns: A Table object if the table was found.
-        :raises: AttributeError on error.
-        """
-        if name in self.tables:
-            return self.tables[name]
-
-        raise AttributeError('No table named %s found.' % name)
 
     def create_all(self):
         """
