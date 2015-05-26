@@ -3,8 +3,8 @@
 
 from os import environ
 
-from boto.dynamodb2 import connect_to_region
 from boto.dynamodb2.table import Table
+import boto
 from flask import (
     _app_ctx_stack as stack,
 )
@@ -35,7 +35,7 @@ class Dynamo(object):
         """
         self.app = app
         self.init_settings()
-        self.check_settings()
+        #self.check_settings()
 
     def init_settings(self):
         """Initialize all of the extension settings."""
@@ -43,8 +43,8 @@ class Dynamo(object):
         self.app.config.setdefault('DYNAMO_ENABLE_LOCAL', environ.get('DYNAMO_ENABLE_LOCAL', False))
         self.app.config.setdefault('DYNAMO_LOCAL_HOST', environ.get('DYNAMO_LOCAL_HOST'))
         self.app.config.setdefault('DYNAMO_LOCAL_PORT', environ.get('DYNAMO_LOCAL_PORT'))
-        self.app.config.setdefault('AWS_ACCESS_KEY_ID', environ.get('AWS_ACCESS_KEY_ID'))
-        self.app.config.setdefault('AWS_SECRET_ACCESS_KEY', environ.get('AWS_SECRET_ACCESS_KEY'))
+        self.app.config.setdefault('AWS_ACCESS_KEY_ID', environ.get('AWS_ACCESS_KEY_ID', None))
+        self.app.config.setdefault('AWS_SECRET_ACCESS_KEY', environ.get('AWS_SECRET_ACCESS_KEY', None))
         self.app.config.setdefault('AWS_REGION', environ.get('AWS_REGION', self.DEFAULT_REGION))
 
     def check_settings(self):
@@ -75,27 +75,28 @@ class Dynamo(object):
         ctx = stack.top
         if ctx is not None:
             if not hasattr(ctx, 'dynamo_connection'):
-                kwargs = {
-                    'host': self.app.config['DYNAMO_LOCAL_HOST'] if self.app.config['DYNAMO_ENABLE_LOCAL'] else None,
-                    'port': int(self.app.config['DYNAMO_LOCAL_PORT']) if self.app.config['DYNAMO_ENABLE_LOCAL'] else None,
-                    'is_secure': False if self.app.config['DYNAMO_ENABLE_LOCAL'] else True,
-                }
+                #kwargs = {
+                #    'host': self.app.config['DYNAMO_LOCAL_HOST'] if self.app.config['DYNAMO_ENABLE_LOCAL'] else None,
+                #    'port': int(self.app.config['DYNAMO_LOCAL_PORT']) if self.app.config['DYNAMO_ENABLE_LOCAL'] else None,
+                #    'is_secure': False if self.app.config['DYNAMO_ENABLE_LOCAL'] else True,
+                #}
 
-                # Only apply if manually specified: otherwise, we'll let boto
-                # figure it out (boto will sniff for ec2 instance profile
-                # credentials).
-                if self.app.config['AWS_ACCESS_KEY_ID']:
-                  kwargs['aws_access_key_id'] = self.app.config['AWS_ACCESS_KEY_ID']
-                if self.app.config['AWS_SECRET_ACCESS_KEY']:
-                  kwargs['aws_secret_access_key'] = self.app.config['AWS_SECRET_ACCESS_KEY']
+                ## Only apply if manually specified: otherwise, we'll let boto
+                ## figure it out (boto will sniff for ec2 instance profile
+                ## credentials).
+                #if self.app.config['AWS_ACCESS_KEY_ID']:
+                #  kwargs['aws_access_key_id'] = self.app.config['AWS_ACCESS_KEY_ID']
+                #if self.app.config['AWS_SECRET_ACCESS_KEY']:
+                #  kwargs['aws_secret_access_key'] = self.app.config['AWS_SECRET_ACCESS_KEY']
 
-                # If DynamoDB local is disabled, we'll remove these settings.
-                if not kwargs['host']:
-                    del kwargs['host']
-                if not kwargs['port']:
-                    del kwargs['port']
+                ## If DynamoDB local is disabled, we'll remove these settings.
+                #if not kwargs['host']:
+                #    del kwargs['host']
+                #if not kwargs['port']:
+                #    del kwargs['port']
 
-                ctx.dynamo_connection = connect_to_region(self.app.config['AWS_REGION'], **kwargs)
+                #ctx.dynamo_connection = connect_to_region(self.app.config['AWS_REGION'], **kwargs)
+                ctx.dynamo_connection = boto.connect_dynamo()
 
             return ctx.dynamo_connection
 
